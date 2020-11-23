@@ -7,24 +7,119 @@ output: pdf_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+HT_MC1_Raw <- read_csv("D:/Psychology Research/Data/HT_MC1_Raw.csv")
+```
+```{r}
+#Packages
+library(dplyr)
+library(ggplot2)
+library(psych)
+library(summarytools)
+library(car)
 ```
 
-## R Markdown
+```{r}
+#Data Cleaning
+##filtering unqualified data
+HT_MC1 <- HT_MC1_Raw
+HT_MC1$X500<- NULL
+HT_MC1 <- HT_MC1[c(-1,-2),]
+HT_MC1 <- subset(HT_MC1, as.numeric(HT_MC1$Progress)>=95)
+HT_MC1 <- subset(HT_MC1, as.numeric(HT_MC1$`Q56_Page Submit`)>=200)
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+##Labeling condition
+HT_MC1$Condition <- ifelse((is.na(HT_MC1$Self_S_reflect)== FALSE),"self",(ifelse(is.na(HT_MC1$Other_O_reflect)== FALSE, "other", "self&other")))
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+##Re-code Values
+HT_MC1$Vol_Benefits_Bi_S <- as.numeric(factor((HT_MC1$Vol_Benefits_Bi_S),
+levels=c("Strongly disagree","Disagree","Somewhat disagree","Neither agree nor disagree","Somewhat agree","Agree","Strongly agree"),
+labels=c("1","2","3","4","5","6","7")))
 
-```{r cars}
-summary(cars)
+HT_MC1$Vol_Benefits_Bi_O <- as.numeric(factor((HT_MC1$Vol_Benefits_Bi_O),
+levels=c("Strongly disagree","Disagree","Somewhat disagree","Neither agree nor disagree","Somewhat agree","Agree","Strongly agree"),
+labels=c("1","2","3","4","5","6","7")))
+
+HT_MC1$Vol_Benefits_Uni <- as.numeric(as.character(factor((HT_MC1$Vol_Benefits_Uni),
+levels=c("benefited the others extremely more than the volunteers themselves","benefited the others moderately more than the volunteers themselves","benefited the others slightly more than the volunteers themselves","benefited others and the volunteers themselves equally","benefited the volunteers themselves slightly more than others","benefited the volunteers themselves moderately more than the others","benefited the volunteers themselves extremely more than the others"),
+labels=c("-3","-2","-1","0","1","2","3"))))
+
+HT_MC1$Vol_Intent_S <- as.numeric(factor((HT_MC1$Vol_Intent_S),
+levels=c("Strongly disagree","Disagree","Somewhat disagree","Neither agree nor disagree","Somewhat agree","Agree","Strongly agree"),
+labels=c("1","2","3","4","5","6","7")))
+
+HT_MC1$Vol_Intent_O <- as.numeric(factor((HT_MC1$Vol_Intent_O),
+levels=c("Strongly disagree","Disagree","Somewhat disagree","Neither agree nor disagree","Somewhat agree","Agree","Strongly agree"),
+labels=c("1","2","3","4","5","6","7")))
 ```
 
-## Including Plots
+```{r}
+#Descriptive Analysis
+##Participants' by condition
+freq(HT_MC1$Condition)
 
-You can also embed plots, for example:
+##Volunteer benefit_self or others_Forced choice
+freq(HT_MC1$Vol_Benefits_forced)
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+##Volunteer benefits and intentions
+###Volunteer benefits_others
+descr(as.numeric(HT_MC1$Vol_Benefits_Bi_O))
+###Volunteer benefits_self
+descr(as.numeric(HT_MC1$Vol_Benefits_Bi_S))
+###Volunteer Intention_benefiting self
+descr(as.numeric(HT_MC1$Vol_Intent_S))
+###Volunteer Intention_benefiting others
+descr(as.numeric(HT_MC1$Vol_Intent_O))
+###Volunteer benefit_self or others
+descr(HT_MC1$Vol_Benefits_Uni)
+
+##Demographics
+###Age
+descr(as.numeric(HT_MC1$Dem_Age))
+
+###Sex
+freq(HT_MC1$Dem_Bio_Sex)
+
+###Gender
+freq(HT_MC1$Dem_Gen_ID)
+
+###Education_father figure
+freq(HT_MC1$Dem_Edu_father)
+
+###Education_mother figure
+freq(HT_MC1$Dem_Edu_mother)
+
+###Nationality
+freq(HT_MC1$Dem_Nationality)
+freq(HT_MC1$Dem_Nationality_text)
+```
+```{r}
+#Inferential Analysis
+Anova(lm(Vol_Intent_O~Condition, data=HT_MC1))
+tapply(HT_MC1$Vol_Intent_O, INDEX =HT_MC1$Condition, FUN = mean)
+tapply(HT_MC1$Vol_Intent_O, INDEX =HT_MC1$Condition, FUN = sd)
+TukeyHSD(aov(lm(Vol_Intent_O~Condition, data=HT_MC1)))
+
+Anova(lm(Vol_Intent_S~Condition, data=HT_MC1))
+tapply(HT_MC1$Vol_Intent_S, INDEX =HT_MC1$Condition, FUN = mean)
+tapply(HT_MC1$Vol_Intent_S, INDEX =HT_MC1$Condition, FUN = sd)
+TukeyHSD(aov(lm(Vol_Intent_S~Condition, data=HT_MC1)))
+
+Anova(lm(Vol_Benefits_Uni~Condition, data=HT_MC1))
+tapply(HT_MC1$Vol_Benefits_Uni, INDEX =HT_MC1$Condition, FUN = mean)
+tapply(HT_MC1$Vol_Benefits_Uni, INDEX =HT_MC1$Condition, FUN = sd)
+TukeyHSD(aov(lm(Vol_Benefits_Uni~Condition, data=HT_MC1)))
+
+Anova(lm(Vol_Benefits_Bi_O~Condition, data=HT_MC1))
+tapply(HT_MC1$Vol_Benefits_Bi_O, INDEX =HT_MC1$Condition, FUN = mean)
+tapply(HT_MC1$Vol_Benefits_Bi_O, INDEX =HT_MC1$Condition, FUN = sd)
+TukeyHSD(aov(lm(Vol_Benefits_Bi_O~Condition, data=HT_MC1)))
+
+Anova(lm(Vol_Benefits_Bi_S~Condition, data=HT_MC1))
+tapply(HT_MC1$Vol_Benefits_Bi_S, INDEX =HT_MC1$Condition, FUN = mean)
+tapply(HT_MC1$Vol_Benefits_Bi_S, INDEX =HT_MC1$Condition, FUN = sd)
+TukeyHSD(aov(lm(Vol_Benefits_Bi_S~Condition, data=HT_MC1)))
+
+chisq.test(HT_MC1$Condition,HT_MC1$Vol_Benefits_forced)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
