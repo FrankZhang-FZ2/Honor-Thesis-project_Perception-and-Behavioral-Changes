@@ -1,4 +1,4 @@
----
+---a
 title: "Honor thesis Study 1_ Qilin"
 author: "Qilin Zhang"
 date: "11/18/2020"
@@ -26,10 +26,15 @@ HT_MC1 <- HT_MC1_Raw
 HT_MC1$X500<- NULL
 HT_MC1 <- HT_MC1[c(-1,-2),]
 HT_MC1 <- subset(HT_MC1, as.numeric(HT_MC1$Progress)>=95)
-HT_MC1 <- subset(HT_MC1, as.numeric(HT_MC1$`Q56_Page Submit`)>=200)
+HT_MC1_1 <- subset(HT_MC1, as.numeric(HT_MC1$`Q56_Page Submit`)>=30)
+HT_MC1_2 <- subset(HT_MC1, as.numeric(HT_MC1$`Q60_Page Submit`)>=30)
+HT_MC1_3 <- subset(HT_MC1, as.numeric(HT_MC1$`Q61_Page Submit`)>=30)
+
+HT_MC1 <- rbind.data.frame(HT_MC1_1,HT_MC1_2,HT_MC1_3)
+
 
 ##Labeling condition
-HT_MC1$Condition <- ifelse((is.na(HT_MC1$Self_S_reflect)== FALSE),"self",(ifelse(is.na(HT_MC1$Other_O_reflect)== FALSE, "other", "self&other")))
+HT_MC1$Condition <- ifelse((is.na(HT_MC1$Self_S_reflect_4)== FALSE),"self",(ifelse(is.na(HT_MC1$Other_O_reflect_4)== FALSE, "other", "self&other")))
 
 ##Re-code Values
 HT_MC1$Vol_Benefits_Bi_S <- as.numeric(factor((HT_MC1$Vol_Benefits_Bi_S),
@@ -41,8 +46,8 @@ levels=c("Strongly disagree","Disagree","Somewhat disagree","Neither agree nor d
 labels=c("1","2","3","4","5","6","7")))
 
 HT_MC1$Vol_Benefits_Uni <- as.numeric(as.character(factor((HT_MC1$Vol_Benefits_Uni),
-levels=c("benefited the others extremely more than the volunteers themselves","benefited the others moderately more than the volunteers themselves","benefited the others slightly more than the volunteers themselves","benefited others and the volunteers themselves equally","benefited the volunteers themselves slightly more than others","benefited the volunteers themselves moderately more than the others","benefited the volunteers themselves extremely more than the others"),
-labels=c("-3","-2","-1","0","1","2","3"))))
+levels=c("benefited the students extremely more than the Matthew","benefited the students moderately more than the Matthew","benefited the students slightly more than the Matthew","benefited the students and Matthew equally","benefited Matthew slightly more than the students","benefited the Matthew moderately more than the students","benefited Matthew extremely more than the students"),
+labels=c("1","2","3","4","5","6",""))))
 
 HT_MC1$Vol_Intent_S <- as.numeric(factor((HT_MC1$Vol_Intent_S),
 levels=c("Strongly disagree","Disagree","Somewhat disagree","Neither agree nor disagree","Somewhat agree","Agree","Strongly agree"),
@@ -121,5 +126,6 @@ tapply(HT_MC1$Vol_Benefits_Bi_S, INDEX =HT_MC1$Condition, FUN = sd)
 TukeyHSD(aov(lm(Vol_Benefits_Bi_S~Condition, data=HT_MC1)))
 
 chisq.test(HT_MC1$Condition,HT_MC1$Vol_Benefits_forced)
+tapply(HT_MC1$Vol_Benefits_forced, INDEX =HT_MC1$Condition, FUN = freq)
 ```
 
