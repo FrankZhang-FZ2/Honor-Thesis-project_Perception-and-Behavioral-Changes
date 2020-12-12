@@ -10,6 +10,8 @@ knitr::opts_chunk$set(echo = TRUE)
 library(readr)
 HT_MC1_Raw <- read_csv("D:/Psychology Research/Data/HT_MC1_Raw.csv")
 ```
+
+
 ```{r}
 #Packages
 library(dplyr)
@@ -31,6 +33,7 @@ HT_MC1_2 <- subset(HT_MC1, as.numeric(HT_MC1$`Q60_Page Submit`)>=30)
 HT_MC1_3 <- subset(HT_MC1, as.numeric(HT_MC1$`Q61_Page Submit`)>=30)
 
 HT_MC1 <- rbind.data.frame(HT_MC1_1,HT_MC1_2,HT_MC1_3)
+HT_MC1 <- subset(HT_MC1,(is.na(HT_MC1$Comprehension_check)== FALSE))
 
 
 ##Labeling condition
