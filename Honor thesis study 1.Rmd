@@ -1,3 +1,8 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
 ---a
 title: "Honor thesis Study 1_ Qilin"
 author: "Qilin Zhang"
@@ -22,6 +27,11 @@ library(car)
 ```
 
 ```{r}
+
+HT_MC1_Raw_T <- HT_MC1_Raw[c(-1,-2),]
+HT_MC1_Raw_T <- subset(HT_MC1_Raw_T, as.numeric(HT_MC1_Raw_T$Progress)>=95)
+HT_MC1_Raw_T$Condition <- ifelse((is.na(HT_MC1_Raw_T$Self_S_reflect_4)== FALSE),"self",(ifelse(is.na(HT_MC1_Raw_T$Other_O_reflect_4)== FALSE, "other", "self&other")))
+freq(HT_MC1_Raw_T$Condition)
 #Data Cleaning
 ##filtering unqualified data
 HT_MC1 <- HT_MC1_Raw
@@ -130,5 +140,51 @@ TukeyHSD(aov(lm(Vol_Benefits_Bi_S~Condition, data=HT_MC1)))
 
 chisq.test(HT_MC1$Condition,HT_MC1$Vol_Benefits_forced)
 tapply(HT_MC1$Vol_Benefits_forced, INDEX =HT_MC1$Condition, FUN = freq)
+```
+```{r}
+
+ggplot(HT_MC1, aes(y = Vol_Benefits_Bi_O,x = Condition),)+
+  geom_boxplot()+
+  labs(y='Vol_Benefts_Uni_O', x='condition')
+
+ggplot(HT_MC1, aes(y = Vol_Benefits_Bi_S,x = Condition),)+
+  geom_boxplot()+
+  labs(y='Vol_Benefts_Uni_S', x='condition')
+
+ggplot(HT_MC1, aes(y = Vol_Benefits_Uni,x = Condition),)+
+  geom_boxplot()+
+  labs(y='Vol_Benefts_Bi', x='condition')
+
+ggplot(HT_MC1, aes(y = Vol_Intent_O,x = Condition),)+
+  geom_boxplot()+
+  labs(y='Vol_Intent_O', x='condition')
+
+ggplot(HT_MC1, aes(y = Vol_Intent_S,x = Condition),)+
+  geom_boxplot()+
+  labs(y='Vol_Intent_S', x='condition')
+
+
+ggplot(HT_MC1, aes(x = Vol_Intent_S),)+
+  geom_density()
+ggplot(HT_MC1, aes(x = Vol_Intent_O),)+
+  geom_density()
+
+
+ggplot(HT_MC1, aes(x = Vol_Benefits_Bi_O,y = Condition),)+
+  geom_boxplot()+
+  labs(y='Vol_Benefts_Uni_O', x='condition')
+
+plot_O <- cbind.data.frame(HT_MC1$Vol_Benefits_Bi_O,HT_MC1$Condition)
+plot_O$variable <- ifelse(is.na(HT_MC1$Vol_Benefits_Bi_O)==TRUE, NA, "Other benefit")
+names(plot_O) <- c("Vol_Benefits","Condition","variable")
+
+plot_S <- cbind.data.frame(HT_MC1$Vol_Benefits_Bi_S,HT_MC1$Condition)
+plot_S$variable <- ifelse(is.na(HT_MC1$Vol_Benefits_Bi_S)==TRUE, NA, "Self benefit")
+names(plot_S) <- c("Vol_Benefits","Condition","variable")
+
+
+Plot <- rbind(plot_O,plot_S)
+
+    
 ```
 
