@@ -34,22 +34,23 @@ Data cleaning Start:
 HT_MC1 <- HT_MC_Main
 HT_MC1$X500<- NULL
 HT_MC1 <- HT_MC1[c(-1,-2),]
-HT_MC1_Raw <- HT_MC1
 HT_MC1 <- subset(HT_MC1, as.numeric(HT_MC1$Progress)>=95)
+HT_MC1_Raw <- HT_MC1
 HT_MC1 <- subset(HT_MC1,HT_MC1$Prosocial_Intent_19=="Neither likely nor unlikely")
 HT_MC1 <- subset(HT_MC1,HT_MC1$Social_Desirability_17=="FALSE")
-HT_MC1_1 <- subset(HT_MC1, as.numeric(HT_MC1$`Timing_Other_Page Submit`)>=20)
-HT_MC1_2 <- subset(HT_MC1, as.numeric(HT_MC1$`Timing_self_Page Submit`)>=20)
-HT_MC1_3 <- subset(HT_MC1, as.numeric(HT_MC1$`Timing_O&S_Page Submit`)>=20)
+HT_MC1_1 <- subset(HT_MC1, as.numeric(HT_MC1$`Timing_Other_Page Submit`)>=25)
+HT_MC1_2 <- subset(HT_MC1, as.numeric(HT_MC1$`Timing_self_Page Submit`)>=25)
+HT_MC1_3 <- subset(HT_MC1, as.numeric(HT_MC1$`Timing_O&S_Page Submit`)>=25)
 HT_MC1 <- rbind.data.frame(HT_MC1_1,HT_MC1_2,HT_MC1_3)
 HT_MC1 <- subset(HT_MC1,(is.na(HT_MC1$Comprehension_check)== FALSE))
 
 ##Labeling condition
 HT_MC1$Condition <- ifelse((is.na(HT_MC1$`Timing_self_Page Submit`)== FALSE),"self",(ifelse(is.na(HT_MC1$`Timing_Other_Page Submit`)== FALSE, "other", "self&other")))
 
+```
 ##exclude all people who have read the message
 HT_MC1 <-subset(HT_MC1, (ifelse(is.na(HT_MC1$Read_before)==TRUE, TRUE, (ifelse(HT_MC1$Read_before!="Yes", TRUE, FALSE)))))
-```
+
 Re-code Values
   For Manipulation Check
 
@@ -139,6 +140,9 @@ labels=c("1","2","3","4","5","6","7")))
 
 #####Combined Vol intention
 HT_MC1$Vol_intent_combined <- (HT_MC1$Vol_Intent_1+HT_MC1$Vol_Intent_2)
+
+
+cor(HT_MC1$Vol_Intent_1,HT_MC1$Vol_Intent_2)
 ```
 
 
@@ -165,12 +169,11 @@ levels=c("Extremely unlikely","Moderately unlikely","Slightly unlikely","Neither
 labels=c("1","2","3","4","5","6","7")))
 
 #####Combined PBIS
+HT_MC1$PBIS_score<-(HT_MC1$PBIS_1+HT_MC1$PBIS_2+HT_MC1$PBIS_3+HT_MC1$PBIS_4)
 ```
 
 
 ```{r}
-HT_MC1$PBIS_score<-(HT_MC1$PBIS_1+HT_MC1$PBIS_2+HT_MC1$PBIS_3+HT_MC1$PBIS_4)
-
 ####Prosocial intention
 
 Pro_intent_Recode <- function (subject){
@@ -319,6 +322,10 @@ TukeyHSD(aov(lm(Vol_Benefits_Uni_S~Condition, data=HT_MC1)))
 
 chisq.test(HT_MC1$Condition,HT_MC1$Vol_Benefits_forced)
 tapply(HT_MC1$Vol_Benefits_forced, INDEX =HT_MC1$Condition, FUN = freq)
+
+
+#cro(HT_MC1$Vol_Benefits_forced, HT_MC1$Condition)
+#cro_cpct(HT_MC1$Vol_Benefits_forced, HT_MC1$Condition)
 ```
 ```{r}
 
@@ -384,18 +391,42 @@ descr(as.numeric(HT_MC1$Vol_intent_combined))
 ggplot(HT_MC1, aes(x = Vol_intent_combined),)+
   geom_density()
 
+par(2,2)
+hist(HT_MC1$Vol_Intent_1)
+hist(HT_MC1$Vol_Intent_2)
+hist(HT_MC1$Vol_intent_combined)
+
 ##PBIS
 descr(as.numeric(HT_MC1$PBIS_score))
 ggplot(HT_MC1, aes(x = PBIS_score),)+
   geom_density()
+hist(HT_MC1$PBIS_score)
 
 ##Prosocial intention
 descr(as.numeric(HT_MC1$Pro_Intent_Score))
 ggplot(HT_MC1, aes(x = Pro_Intent_Score),)+
   geom_density()
+```
+HT_MC1$Vol_intent_combined_High_Low <- quantileCut (HT_MC1$Vol_intent_combined, 2)
+table(HT_MC1$Vol_intent_combined )
+HT_MC1$Vol_intent_combined_High_Low <- factor(HT_MC1$Vol_intent_combined_High_Low,
+levels= c("(5.99,12]", "(12,14]"),
+labels = c("Low","High" ))
+table(HT_MC1$Vol_intent_combined_High_Low )
 
-  ##Demographics
+
+cro(HT_MC1$Vol_intent_combined,HT_MC1$Condition)
+cro_cpct(HT_MC1$Vol_intent_combined,HT_MC1$Condition)
+
+
+cro_cpct(HT_MC1$Condition,HT_MC1$Vol_intent_combined)
+
+```{r}
+##Demographics
 ###Age
+HT1_5 <- subset(HT_MC1_Raw, as.numeric(HT_MC1_Raw$Dem_Age)<=100)
+descr(as.numeric(HT1_5$Dem_Age))
+
 descr(as.numeric(HT_MC1$Dem_Age))
 
 ###Semester before graduation
@@ -403,6 +434,7 @@ descr(as.numeric(HT_MC1$Dem_Semester))
 
 ###Sex
 freq(HT_MC1$Dem_Bio_Sex)
+freq(HT1_5$Dem_Bio_Sex)
 
 ###Gender
 freq(HT_MC1$Dem_Gen_ID)
@@ -456,7 +488,7 @@ tapply(HT_MC1$Vol_Intent_2, INDEX =HT_MC1$Condition, FUN = mean)
 tapply(HT_MC1$Vol_Intent_2, INDEX =HT_MC1$Condition, FUN = sd)
 TukeyHSD(aov(lm(Vol_Intent_2~Condition, data=HT_MC1)))
 
-t.test(HT_MC1$Vol_Intent_1,HT_MC1$Vol_Intent_2)
+t.test(HT_MC1$Vol_Intent_1,HT_MC1$Vol_Intent_2,alternative = c("two.sided"),paired = TRUE,conf.level = 0.95)
 
 ##PBIS
 Anova(lm(PBIS_score~Condition, data=HT_MC1))
@@ -475,6 +507,8 @@ TukeyHSD(aov(lm(Pro_Intent_Score~Condition, data=HT_MC1)))
 
 Prosocial_beh_cronbach <- data.frame(HT_MC1$Prosocial_Intent_1,HT_MC1$Prosocial_Intent_2,HT_MC1$Prosocial_Intent_3,HT_MC1$Prosocial_Intent_4,HT_MC1$Prosocial_Intent_5,HT_MC1$Prosocial_Intent_6,HT_MC1$Prosocial_Intent_7,HT_MC1$Prosocial_Intent_8,HT_MC1$Prosocial_Intent_9,HT_MC1$Prosocial_Intent_10,HT_MC1$Prosocial_Intent_11,HT_MC1$Prosocial_Intent_12,HT_MC1$Prosocial_Intent_13,HT_MC1$Prosocial_Intent_14,HT_MC1$Prosocial_Intent_15,HT_MC1$Prosocial_Intent_16,HT_MC1$Prosocial_Intent_17,HT_MC1$Prosocial_Intent_18)
 cronbach(Prosocial_beh_cronbach)
+
+
 
 ##Prosocial behavior
 chisq.test(HT_MC1$Condition,HT_MC1$Prosocial_Beh)
@@ -504,7 +538,7 @@ confint(Vol_intent_SD_regression_1, level = 0.95)
 Vol_intent_SD_regression_2 <- lm(Social_Desirability_Score~Vol_Intent_2, data =HT_MC1)
 summary(Vol_intent_SD_regression_2)
 confint(Vol_intent_SD_regression_2, level = 0.95)
-
+ 
 ###PBIS
 PBIS_SD_regression <- lm(Social_Desirability_Score~PBIS_score, data =HT_MC1)
 summary(PBIS_SD_regression)
@@ -541,17 +575,215 @@ confint(PBIS_COVID_regression, level = 0.95)
 Pro_intent_COVID_regression <- lm(COVID_Stress_1~Pro_Intent_Score, data =HT_MC1)
 summary(Pro_intent_COVID_regression)
 confint(Pro_intent_COVID_regression, level = 0.95)
+```
+
+
+```{r}
+##PBIS&Prosocial behavior
+PBIS_Pro_Intent_regression <- lm(Pro_Intent_Score~PBIS_score, data =HT_MC1)
+summary(PBIS_Pro_Intent_regression)
+confint(PBIS_Pro_Intent_regression, level = 0.95)
+plot(PBIS_Pro_Intent_regression)
+
+t.test(Pro_Intent_Score~Prosocial_Beh,alternative = c("less"), data= HT_MC1)
+t.test(PBIS_score~Prosocial_Beh, alternative = c("less"),data= HT_MC1)
 
 ```
 
 
 ```{r}
-##Social desirability and prosociality (graph)
-###Volunteer intention
-ggplot(HT_MC1, aes(x = Social_Desirability_Score, y = Vol_intent_combined),)+
-  geom_point()+
-  geom_abline()
 
+##Independent response models for all conditions
+
+Inter_CorrData<-data.frame(HT_MC1$Social_Desirability_Score, HT_MC1$COVID_Stress_1,HT_MC1$Vol_intent_combined,HT_MC1$PBIS_score,HT_MC1$Pro_Intent_Score )
+#Thesis_InterCor <- rcorr(as.matrix(Inter_CorrData,type=c("pearson")))
+#write.xlsx(as.data.frame(Thesis_InterCor$r), file  = "Inter_CorrData.csv" )
+
+
+Anova(lm(HT_MC1$COVID_Stress_1~HT_MC1$Condition))
+Anova(lm(HT_MC1$Vol_Intent_1~HT_MC1$Condition+HT_MC1$Social_Desirability_Score))
+Anova(lm(HT_MC1$Vol_Intent_1~HT_MC1$Condition))
+
+Anova(lm(HT_MC1$Pro_Intent_Score~HT_MC1$Condition*HT_MC1$Social_Desirability_Score))
+  
+summary(lm(HT_MC1$Vol_Intent_1~HT_MC1$Vol_Intent_S))
+summary(lm(HT_MC1$Vol_Intent_1~HT_MC1$Vol_Intent_O))
+summary(lm(HT_MC1$Vol_Intent_1~HT_MC1$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1$Vol_Intent_1~HT_MC1$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1$Vol_Intent_1~HT_MC1$Vol_Intent_S+HT_MC1$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1$Vol_Intent_1~HT_MC1$Vol_Intent_O+HT_MC1$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1$Vol_Intent_1~HT_MC1$Vol_Intent_S*HT_MC1$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1$Vol_Intent_1~HT_MC1$Vol_Intent_O*HT_MC1$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1$Vol_Intent_1~HT_MC1$Vol_Intent_S+HT_MC1$Vol_Intent_O+HT_MC1$Vol_Benefits_Uni_O
+           +HT_MC1$Vol_Benefits_Uni_S))
+
+summary(lm(HT_MC1$Vol_Intent_2~HT_MC1$Vol_Intent_S))
+summary(lm(HT_MC1$Vol_Intent_2~HT_MC1$Vol_Intent_O))
+summary(lm(HT_MC1$Vol_Intent_2~HT_MC1$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1$Vol_Intent_2~HT_MC1$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1$Vol_Intent_2~HT_MC1$Vol_Intent_S+HT_MC1$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1$Vol_Intent_2~HT_MC1$Vol_Intent_O+HT_MC1$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1$Vol_Intent_2~HT_MC1$Vol_Intent_S*HT_MC1$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1$Vol_Intent_2~HT_MC1$Vol_Intent_O*HT_MC1$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1$Vol_Intent_2~HT_MC1$Vol_Intent_S+HT_MC1$Vol_Intent_O+HT_MC1$Vol_Benefits_Uni_O
+           +HT_MC1$Vol_Benefits_Uni_S))
+
+summary(lm(HT_MC1$Pro_Intent_Score~HT_MC1$Vol_Intent_S))
+summary(lm(HT_MC1$Pro_Intent_Score~HT_MC1$Vol_Intent_O))
+summary(lm(HT_MC1$Pro_Intent_Score~HT_MC1$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1$Pro_Intent_Score~HT_MC1$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1$Pro_Intent_Score~HT_MC1$Vol_Intent_S+HT_MC1$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1$Pro_Intent_Score~HT_MC1$Vol_Intent_O+HT_MC1$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1$Pro_Intent_Score~HT_MC1$Vol_Intent_S*HT_MC1$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1$Pro_Intent_Score~HT_MC1$Vol_Intent_O*HT_MC1$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1$Pro_Intent_Score~HT_MC1$Vol_Intent_S+HT_MC1$Vol_Intent_O+HT_MC1$Vol_Benefits_Uni_O+HT_MC1$Vol_Benefits_Uni_S))
+
+summary(lm(HT_MC1$PBIS_score~HT_MC1$Vol_Intent_S))
+summary(lm(HT_MC1$PBIS_score~HT_MC1$Vol_Intent_O))
+summary(lm(HT_MC1$PBIS_score~HT_MC1$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1$PBIS_score~HT_MC1$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1$PBIS_score~HT_MC1$Vol_Intent_S+HT_MC1$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1$PBIS_score~HT_MC1$Vol_Intent_O+HT_MC1$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1$PBIS_score~HT_MC1$Vol_Intent_S*HT_MC1$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1$PBIS_score~HT_MC1$Vol_Intent_O*HT_MC1$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1$PBIS_score~HT_MC1$Vol_Intent_S+HT_MC1$Vol_Intent_O+HT_MC1$Vol_Benefits_Uni_O
+           +HT_MC1$Vol_Benefits_Uni_S))
+```
+```{r}
+#Independent response models for self condition 
+HT_MC1_S <- subset(HT_MC1, HT_MC1$Condition == "self")
+summary(lm(HT_MC1_S$Vol_Intent_1~HT_MC1_S$Vol_Intent_S))
+summary(lm(HT_MC1_S$Vol_Intent_1~HT_MC1_S$Vol_Intent_O))
+summary(lm(HT_MC1_S$Vol_Intent_1~HT_MC1_S$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1_S$Vol_Intent_1~HT_MC1_S$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1_S$Vol_Intent_1~HT_MC1_S$Vol_Intent_S+HT_MC1_S$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1_S$Vol_Intent_1~HT_MC1_S$Vol_Intent_O+HT_MC1_S$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1_S$Vol_Intent_1~HT_MC1_S$Vol_Intent_S*HT_MC1_S$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1_S$Vol_Intent_1~HT_MC1_S$Vol_Intent_O*HT_MC1_S$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1_S$Vol_Intent_1~HT_MC1_S$Vol_Intent_S+HT_MC1_S$Vol_Intent_O+HT_MC1_S$Vol_Benefits_Uni_O
+           +HT_MC1_S$Vol_Benefits_Uni_S))
+
+summary(lm(HT_MC1_S$Vol_Intent_2~HT_MC1_S$Vol_Intent_S))
+summary(lm(HT_MC1_S$Vol_Intent_2~HT_MC1_S$Vol_Intent_O))
+summary(lm(HT_MC1_S$Vol_Intent_2~HT_MC1_S$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1_S$Vol_Intent_2~HT_MC1_S$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1_S$Vol_Intent_2~HT_MC1_S$Vol_Intent_S+HT_MC1_S$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1_S$Vol_Intent_2~HT_MC1_S$Vol_Intent_O+HT_MC1_S$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1_S$Vol_Intent_2~HT_MC1_S$Vol_Intent_S*HT_MC1_S$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1_S$Vol_Intent_2~HT_MC1_S$Vol_Intent_O*HT_MC1_S$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1_S$Vol_Intent_2~HT_MC1_S$Vol_Intent_S+HT_MC1_S$Vol_Intent_O+HT_MC1_S$Vol_Benefits_Uni_O
+           +HT_MC1_S$Vol_Benefits_Uni_S))
+
+summary(lm(HT_MC1_S$Pro_Intent_Score~HT_MC1_S$Vol_Intent_S))
+summary(lm(HT_MC1_S$Pro_Intent_Score~HT_MC1_S$Vol_Intent_O))
+summary(lm(HT_MC1_S$Pro_Intent_Score~HT_MC1_S$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1_S$Pro_Intent_Score~HT_MC1_S$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1_S$Pro_Intent_Score~HT_MC1_S$Vol_Intent_S+HT_MC1_S$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1_S$Pro_Intent_Score~HT_MC1_S$Vol_Intent_O+HT_MC1_S$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1_S$Pro_Intent_Score~HT_MC1_S$Vol_Intent_S*HT_MC1_S$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1_S$Pro_Intent_Score~HT_MC1_S$Vol_Intent_O*HT_MC1_S$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1_S$Pro_Intent_Score~HT_MC1_S$Vol_Intent_S+HT_MC1_S$Vol_Intent_O+HT_MC1_S$Vol_Benefits_Uni_O+HT_MC1_S$Vol_Benefits_Uni_S))
+
+summary(lm(HT_MC1_S$PBIS_score~HT_MC1_S$Vol_Intent_S))
+summary(lm(HT_MC1_S$PBIS_score~HT_MC1_S$Vol_Intent_O))
+summary(lm(HT_MC1_S$PBIS_score~HT_MC1_S$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1_S$PBIS_score~HT_MC1_S$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1_S$PBIS_score~HT_MC1_S$Vol_Intent_S+HT_MC1_S$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1_S$PBIS_score~HT_MC1_S$Vol_Intent_O+HT_MC1_S$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1_S$PBIS_score~HT_MC1_S$Vol_Intent_S*HT_MC1_S$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1_S$PBIS_score~HT_MC1_S$Vol_Intent_O*HT_MC1_S$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1_S$PBIS_score~HT_MC1_S$Vol_Intent_S+HT_MC1_S$Vol_Intent_O+HT_MC1_S$Vol_Benefits_Uni_O+HT_MC1_S$Vol_Benefits_Uni_S))
 ```
 
+```{r}
+#Independent response models for other condition 
+HT_MC1_O <- subset(HT_MC1, HT_MC1$Condition == "other")
+summary(lm(HT_MC1_O$Vol_Intent_1~HT_MC1_O$Vol_Intent_S))
+summary(lm(HT_MC1_O$Vol_Intent_1~HT_MC1_O$Vol_Intent_O))
+summary(lm(HT_MC1_O$Vol_Intent_1~HT_MC1_O$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1_O$Vol_Intent_1~HT_MC1_O$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1_O$Vol_Intent_1~HT_MC1_O$Vol_Intent_S+HT_MC1_O$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1_O$Vol_Intent_1~HT_MC1_O$Vol_Intent_O+HT_MC1_O$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1_O$Vol_Intent_1~HT_MC1_O$Vol_Intent_S*HT_MC1_O$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1_O$Vol_Intent_1~HT_MC1_O$Vol_Intent_O*HT_MC1_O$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1_O$Vol_Intent_1~HT_MC1_O$Vol_Intent_S+HT_MC1_O$Vol_Intent_O+HT_MC1_O$Vol_Benefits_Uni_O
+           +HT_MC1_O$Vol_Benefits_Uni_S))
+
+summary(lm(HT_MC1_O$Vol_Intent_2~HT_MC1_O$Vol_Intent_S))
+summary(lm(HT_MC1_O$Vol_Intent_2~HT_MC1_O$Vol_Intent_O))
+summary(lm(HT_MC1_O$Vol_Intent_2~HT_MC1_O$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1_O$Vol_Intent_2~HT_MC1_O$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1_O$Vol_Intent_2~HT_MC1_O$Vol_Intent_S+HT_MC1_O$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1_O$Vol_Intent_2~HT_MC1_O$Vol_Intent_O+HT_MC1_O$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1_O$Vol_Intent_2~HT_MC1_O$Vol_Intent_S*HT_MC1_O$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1_O$Vol_Intent_2~HT_MC1_O$Vol_Intent_O*HT_MC1_O$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1_O$Vol_Intent_2~HT_MC1_O$Vol_Intent_S+HT_MC1_O$Vol_Intent_O+HT_MC1_O$Vol_Benefits_Uni_O
+           +HT_MC1_O$Vol_Benefits_Uni_S))
+
+summary(lm(HT_MC1_O$Pro_Intent_Score~HT_MC1_O$Vol_Intent_S))
+summary(lm(HT_MC1_O$Pro_Intent_Score~HT_MC1_O$Vol_Intent_O))
+summary(lm(HT_MC1_O$Pro_Intent_Score~HT_MC1_O$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1_O$Pro_Intent_Score~HT_MC1_O$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1_O$Pro_Intent_Score~HT_MC1_O$Vol_Intent_S+HT_MC1_O$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1_O$Pro_Intent_Score~HT_MC1_O$Vol_Intent_O+HT_MC1_O$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1_O$Pro_Intent_Score~HT_MC1_O$Vol_Intent_S*HT_MC1_O$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1_O$Pro_Intent_Score~HT_MC1_O$Vol_Intent_O*HT_MC1_O$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1_O$Pro_Intent_Score~HT_MC1_O$Vol_Intent_S+HT_MC1_O$Vol_Intent_O+HT_MC1_O$Vol_Benefits_Uni_O+HT_MC1_O$Vol_Benefits_Uni_S))
+
+summary(lm(HT_MC1_O$PBIS_score~HT_MC1_O$Vol_Intent_S))
+summary(lm(HT_MC1_O$PBIS_score~HT_MC1_O$Vol_Intent_O))
+summary(lm(HT_MC1_O$PBIS_score~HT_MC1_O$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1_O$PBIS_score~HT_MC1_O$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1_O$PBIS_score~HT_MC1_O$Vol_Intent_S+HT_MC1_O$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1_O$PBIS_score~HT_MC1_O$Vol_Intent_O+HT_MC1_O$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1_O$PBIS_score~HT_MC1_O$Vol_Intent_S*HT_MC1_O$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1_O$PBIS_score~HT_MC1_O$Vol_Intent_O*HT_MC1_O$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1_O$PBIS_score~HT_MC1_O$Vol_Intent_S+HT_MC1_O$Vol_Intent_O+HT_MC1_O$Vol_Benefits_Uni_O+HT_MC1_O$Vol_Benefits_Uni_S))
+```
+
+```{r}
+#Independent response models for self and other condition 
+HT_MC1_OS <- subset(HT_MC1, HT_MC1$Condition == "self&other")
+summary(lm(HT_MC1_OS$Vol_Intent_1~HT_MC1_OS$Vol_Intent_S))
+summary(lm(HT_MC1_OS$Vol_Intent_1~HT_MC1_OS$Vol_Intent_O))
+summary(lm(HT_MC1_OS$Vol_Intent_1~HT_MC1_OS$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1_OS$Vol_Intent_1~HT_MC1_OS$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1_OS$Vol_Intent_1~HT_MC1_OS$Vol_Intent_S+HT_MC1_OS$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1_OS$Vol_Intent_1~HT_MC1_OS$Vol_Intent_O+HT_MC1_OS$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1_OS$Vol_Intent_1~HT_MC1_OS$Vol_Intent_S*HT_MC1_OS$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1_OS$Vol_Intent_1~HT_MC1_OS$Vol_Intent_O*HT_MC1_OS$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1_OS$Vol_Intent_1~HT_MC1_OS$Vol_Intent_S+HT_MC1_OS$Vol_Intent_O+HT_MC1_OS$Vol_Benefits_Uni_O
+           +HT_MC1_OS$Vol_Benefits_Uni_S))
+
+summary(lm(HT_MC1_OS$Vol_Intent_2~HT_MC1_OS$Vol_Intent_S))
+summary(lm(HT_MC1_OS$Vol_Intent_2~HT_MC1_OS$Vol_Intent_O))
+summary(lm(HT_MC1_OS$Vol_Intent_2~HT_MC1_OS$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1_OS$Vol_Intent_2~HT_MC1_OS$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1_OS$Vol_Intent_2~HT_MC1_OS$Vol_Intent_S+HT_MC1_OS$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1_OS$Vol_Intent_2~HT_MC1_OS$Vol_Intent_O+HT_MC1_OS$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1_OS$Vol_Intent_2~HT_MC1_OS$Vol_Intent_S*HT_MC1_OS$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1_OS$Vol_Intent_2~HT_MC1_OS$Vol_Intent_O*HT_MC1_OS$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1_OS$Vol_Intent_2~HT_MC1_OS$Vol_Intent_S+HT_MC1_OS$Vol_Intent_O+HT_MC1_OS$Vol_Benefits_Uni_O
+           +HT_MC1_OS$Vol_Benefits_Uni_S))
+
+summary(lm(HT_MC1_OS$Pro_Intent_Score~HT_MC1_OS$Vol_Intent_S))
+summary(lm(HT_MC1_OS$Pro_Intent_Score~HT_MC1_OS$Vol_Intent_O))
+summary(lm(HT_MC1_OS$Pro_Intent_Score~HT_MC1_OS$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1_OS$Pro_Intent_Score~HT_MC1_OS$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1_OS$Pro_Intent_Score~HT_MC1_OS$Vol_Intent_S+HT_MC1_OS$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1_OS$Pro_Intent_Score~HT_MC1_OS$Vol_Intent_O+HT_MC1_OS$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1_OS$Pro_Intent_Score~HT_MC1_OS$Vol_Intent_S*HT_MC1_OS$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1_OS$Pro_Intent_Score~HT_MC1_OS$Vol_Intent_O*HT_MC1_OS$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1_OS$Pro_Intent_Score~HT_MC1_OS$Vol_Intent_S+HT_MC1_OS$Vol_Intent_O+HT_MC1_OS$Vol_Benefits_Uni_O+HT_MC1_OS$Vol_Benefits_Uni_S))
+
+summary(lm(HT_MC1_OS$PBIS_score~HT_MC1_OS$Vol_Intent_S))
+summary(lm(HT_MC1_OS$PBIS_score~HT_MC1_OS$Vol_Intent_O))
+summary(lm(HT_MC1_OS$PBIS_score~HT_MC1_OS$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1_OS$PBIS_score~HT_MC1_OS$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1_OS$PBIS_score~HT_MC1_OS$Vol_Intent_S+HT_MC1_OS$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1_OS$PBIS_score~HT_MC1_OS$Vol_Intent_O+HT_MC1_OS$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1_OS$PBIS_score~HT_MC1_OS$Vol_Intent_S*HT_MC1_OS$Vol_Benefits_Uni_S))
+summary(lm(HT_MC1_OS$PBIS_score~HT_MC1_OS$Vol_Intent_O*HT_MC1_OS$Vol_Benefits_Uni_O))
+summary(lm(HT_MC1_OS$PBIS_score~HT_MC1_OS$Vol_Intent_S+HT_MC1_OS$Vol_Intent_O+HT_MC1_OS$Vol_Benefits_Uni_O+HT_MC1_OS$Vol_Benefits_Uni_S))
+```
 

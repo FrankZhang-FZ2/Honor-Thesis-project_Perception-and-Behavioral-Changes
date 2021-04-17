@@ -1,0 +1,631 @@
+---
+title: "Honors Thesis_Main Study"
+author: "Qilin Zhang"
+date: "2/6/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+HT_MTurk <- read_csv("D:/Psychology Research/Data/HT_MTurk.csv")
+```
+
+```{r}
+#Packages
+library(dplyr)
+library(Hmisc)
+library(tidyr)
+library(ggplot2)
+library(psych)
+library(summarytools)
+library(car)
+library(psy)
+library(openxlsx)
+```
+
+
+## <- HT2_Raw[c(-1,-2),]
+HT_MC_Main <- subset(HT_MC_Main, as.numeric(HT_MC_Main$Progress)>=95)
+HT_MC_Main$Condition <- ifelse((is.na(HT_MC_Main$Self_S_reflect_4)== FALSE),"self",(ifelse(is.na(HT_MC_Main$Other_O_reflect_4)== FALSE, "other", "self&other")))
+freq(HT_MC_Main$Condition)## (no use so far)
+Data cleaning Start:
+
+```{r}
+#Data Cleaning
+##filtering unqualified data
+HT2 <- HT_MTurk
+HT2$X500<- NULL
+HT2 <- HT2[c(-1,-2),]
+HT2_Raw <- HT2
+#HT2 <- subset(HT2, as.numeric(HT2_Raw$`Duration (in seconds)`)>=291)
+HT2 <- subset(HT2, as.numeric(HT2$Progress)>=95)
+HT2 <- subset(HT2,HT2$Prosocial_Intent_19=="Neither likely nor unlikely")
+HT2 <- subset(HT2,HT2$Social_Desirability_17=="FALSE")
+##Labeling condition
+HT2$Condition <- ifelse((is.na(HT2$`Timing_self_Page Submit`)== FALSE),"self",(ifelse(is.na(HT2$`Timing_Other_Page Submit`)== FALSE, "other", (ifelse(is.na(HT2$`Timing_O&S_Page Submit`)== FALSE, "self&other","nothing")))))
+HT2_1 <- subset(HT2, as.numeric(HT2$`Timing_Other_Page Submit`)>=25)
+HT2_1 <- subset(HT2_1,(is.na(HT2_1$Comprehension_check)== FALSE))
+HT2_2 <- subset(HT2, as.numeric(HT2$`Timing_self_Page Submit`)>=25)
+HT2_2 <- subset(HT2_2,(is.na(HT2_2$Comprehension_check)== FALSE))
+HT2_3 <- subset(HT2, as.numeric(HT2$`Timing_O&S_Page Submit`)>=25)
+HT2_3 <- subset(HT2_3,(is.na(HT2_3 $Comprehension_check)== FALSE))
+HT2_4 <- subset(HT2, HT2$Condition6 == "nothing" )
+##Clean the data from robots
+HT2_4 <- subset(HT2_4,(is.na(HT2_4$Social_Desirability_1)== FALSE))
+HT2_4 <- subset(HT2_4,(is.na(HT2_4$COVID_Stress_1)== FALSE))
+
+HT2 <- rbind.data.frame(HT2_1,HT2_2,HT2_3)
+
+# <- rbind.data.frame(HT2_1,HT2_2,HT2_3,HT2_4)
+
+
+```
+##exclude all people who have read the message
+HT2 <-subset(HT2, (ifelse(is.na(HT2$Read_before)==TRUE, TRUE, (ifelse(HT2$Read_before!="Yes", TRUE, FALSE)))))
+
+Re-code Values
+  For Manipulation Check
+
+```{r}
+
+HT2$Vol_Benefits_Uni_S <- as.numeric(factor((HT2$Vol_Benefits_Uni_S),
+levels=c("Strongly disagree","Disagree","Somewhat disagree","Neither agree nor disagree","Somewhat agree","Agree","Strongly agree"),
+labels=c("1","2","3","4","5","6","7")))
+
+HT2$Vol_Benefits_Uni_O <- as.numeric(factor((HT2$Vol_Benefits_Uni_O),
+levels=c("Strongly disagree","Disagree","Somewhat disagree","Neither agree nor disagree","Somewhat agree","Agree","Strongly agree"),
+labels=c("1","2","3","4","5","6","7")))
+
+HT2$Vol_Benefits_Bi <- as.numeric(as.character(factor((HT2$Vol_Benefits_Bi),
+levels=c("Benefited the students extremely more than the Matthew","Benefited the students moderately more than the Matthew","Benefited the students slightly more than the Matthew","Benefited the students and Matthew equally","Benefited Matthew slightly more than the students","Benefited the Matthew moderately more than the students","Benefited Matthew extremely more than the students"),
+labels=c("1","2","3","4","5","6","7"))))
+
+HT2$Vol_Intent_S <- as.numeric(factor((HT2$Vol_Intent_S),
+levels=c("Strongly disagree","Disagree","Somewhat disagree","Neither agree nor disagree","Somewhat agree","Agree","Strongly agree"),
+labels=c("1","2","3","4","5","6","7")))
+
+HT2$Vol_Intent_O <- as.numeric(factor((HT2$Vol_Intent_O),
+levels=c("Strongly disagree","Disagree","Somewhat disagree","Neither agree nor disagree","Somewhat agree","Agree","Strongly agree"),
+labels=c("1","2","3","4","5","6","7")))
+```
+
+  For main study
+
+```{r}
+####Social desirability
+
+SD_Recode <- function (subject){
+subject <- (as.numeric(as.character(factor(subject,
+levels= c("TRUE","FALSE"),
+labels = c(1,0)))))
+}
+
+SD_Reverse_Recode <- function (subject){
+subject <- (as.numeric(as.character(factor(subject,
+levels= c("TRUE","FALSE"),
+labels = c(0,1)))))
+}
+
+HT2$Social_Desirability_1 <- SD_Reverse_Recode(HT2$Social_Desirability_1)
+HT2$Social_Desirability_5 <- SD_Reverse_Recode(HT2$Social_Desirability_5)
+HT2$Social_Desirability_6 <- SD_Reverse_Recode(HT2$Social_Desirability_6)
+HT2$Social_Desirability_10 <- SD_Reverse_Recode(HT2$Social_Desirability_10)
+HT2$Social_Desirability_14 <- SD_Reverse_Recode(HT2$Social_Desirability_14)
+HT2$Social_Desirability_16 <- SD_Reverse_Recode(HT2$Social_Desirability_16)
+
+HT2$Social_Desirability_2 <- SD_Recode(HT2$Social_Desirability_2)
+HT2$Social_Desirability_3 <- SD_Recode(HT2$Social_Desirability_3)
+HT2$Social_Desirability_4 <- SD_Recode(HT2$Social_Desirability_4)
+HT2$Social_Desirability_7 <- SD_Recode(HT2$Social_Desirability_7)
+HT2$Social_Desirability_8 <- SD_Recode(HT2$Social_Desirability_8)
+HT2$Social_Desirability_9 <- SD_Recode(HT2$Social_Desirability_9)
+HT2$Social_Desirability_11 <- SD_Recode(HT2$Social_Desirability_11)
+HT2$Social_Desirability_12 <- SD_Recode(HT2$Social_Desirability_12)
+HT2$Social_Desirability_13 <- SD_Recode(HT2$Social_Desirability_13)
+HT2$Social_Desirability_15 <- SD_Recode(HT2$Social_Desirability_15)
+
+HT2$Social_Desirability_Score <- (HT2$Social_Desirability_1+HT2$Social_Desirability_2+HT2$Social_Desirability_3+HT2$Social_Desirability_4+HT2$Social_Desirability_5+HT2$Social_Desirability_6+HT2$Social_Desirability_7+HT2$Social_Desirability_8+HT2$Social_Desirability_9+HT2$Social_Desirability_10+HT2$Social_Desirability_11+HT2$Social_Desirability_12+HT2$Social_Desirability_13+HT2$Social_Desirability_14+HT2$Social_Desirability_15+HT2$Social_Desirability_16)
+```
+
+
+```{r}
+####COVID stress
+
+HT2$COVID_Stress_1 <- as.numeric(factor((HT2$COVID_Stress_1),
+levels=c("Not impactful at all (1)","2","3","4","Extremely impactful (5)"),
+labels=c("1","2","3","4","5")))
+```
+
+
+```{r}
+####Volunteer intention
+HT2$Vol_Intent_1 <- as.numeric(HT2$Vol_Intent_50)
+HT2$Vol_Intent_2 <- as.numeric(HT2$Vol_Intent_51)
+
+#####Combined Vol intention
+HT2$Vol_intent_combined <- (as.numeric(HT2$Vol_Intent_50)+as.numeric(HT2$Vol_Intent_51))
+
+
+#cor(HT2$Vol_Intent_1,HT2$Vol_Intent_2)
+```
+
+#####Next year
+HT2$Vol_Intent_1 <- as.numeric(factor((HT2$Vol_Intent_1),
+levels=c("Extremely unlikely","Moderately unlikely","Slightly unlikely","Neither likely nor unlikely","Slightly likely","Moderately likely","Extremely likely"),
+labels=c("1","2","3","4","5","6","7")))
+
+#####three years
+HT2$Vol_Intent_2 <- as.numeric(factor((HT2$Vol_Intent_2),
+levels=c("Extremely unlikely","Moderately unlikely","Slightly unlikely","Neither likely nor unlikely","Slightly likely","Moderately likely","Extremely likely"),
+labels=c("1","2","3","4","5","6","7")))
+
+```{r}
+####PBIS
+#(Comfort someone I know after they experience a hardship`)
+HT2$PBIS_1 <- as.numeric(factor((HT2$PBIS_1),
+levels=c("Extremely unlikely","Moderately unlikely","Slightly unlikely","Neither likely nor unlikely","Slightly likely","Moderately likely","Extremely likely"),
+labels=c("1","2","3","4","5","6","7")))
+
+#(Help a stranger find something they lost, like their key or a pet)
+HT2$PBIS_2 <- as.numeric(factor((HT2$PBIS_2),
+levels=c("Extremely unlikely","Moderately unlikely","Slightly unlikely","Neither likely nor unlikely","Slightly likely","Moderately likely","Extremely likely"),
+labels=c("1","2","3","4","5","6","7")))
+
+#(Help care for a sick friend or relative)
+HT2$PBIS_3 <- as.numeric(factor((HT2$PBIS_3),
+levels=c("Extremely unlikely","Moderately unlikely","Slightly unlikely","Neither likely nor unlikely","Slightly likely","Moderately likely","Extremely likely"),
+labels=c("1","2","3","4","5","6","7")))
+
+#(Assist a stranger with a small task (e.g., help carry groceries, watch their things while they use the restroom))
+HT2$PBIS_4 <- as.numeric(factor((HT2$PBIS_4),
+levels=c("Extremely unlikely","Moderately unlikely","Slightly unlikely","Neither likely nor unlikely","Slightly likely","Moderately likely","Extremely likely"),
+labels=c("1","2","3","4","5","6","7")))
+
+#####Combined PBIS
+HT2$PBIS_score<-(HT2$PBIS_1+HT2$PBIS_2+HT2$PBIS_3+HT2$PBIS_4)
+```
+
+
+```{r}
+####Prosocial intention
+
+Pro_intent_Recode <- function (subject){
+subject <- as.numeric(factor((subject),
+levels=c("Extremely unlikely","Moderately unlikely","Slightly unlikely","Neither likely nor unlikely","Slightly likely","Moderately likely","Extremely likely"),
+labels=c("1","2","3","4","5","6","7")))
+}
+
+#(Give directions to a stranger)
+HT2$Prosocial_Intent_1 <- Pro_intent_Recode(HT2$Prosocial_Intent_1)
+
+#(Made change for a stranger)
+HT2$Prosocial_Intent_2 <- Pro_intent_Recode(HT2$Prosocial_Intent_2)
+
+#(Give money to a stranger who needed it)
+HT2$Prosocial_Intent_3 <- Pro_intent_Recode(HT2$Prosocial_Intent_3)
+
+#(Give money to a stranger who asked me for it)
+HT2$Prosocial_Intent_4 <- Pro_intent_Recode(HT2$Prosocial_Intent_4)
+
+#(Give money to charity)
+HT2$Prosocial_Intent_5 <- Pro_intent_Recode(HT2$Prosocial_Intent_5)
+
+#(Donate goods or clothes to a charity)
+HT2$Prosocial_Intent_6 <- Pro_intent_Recode(HT2$Prosocial_Intent_6)
+
+#(Donate blood)
+HT2$Prosocial_Intent_7 <- Pro_intent_Recode(HT2$Prosocial_Intent_7)
+
+#(Do volunteer work for a charity)
+HT2$Prosocial_Intent_8 <- Pro_intent_Recode(HT2$Prosocial_Intent_8)
+
+#(Help carry a stranger's belongings (e.g., books, parcels, etc.))
+HT2$Prosocial_Intent_9 <- Pro_intent_Recode(HT2$Prosocial_Intent_9)
+
+#(Delay an elevator and hold the door open for a stranger.)
+HT2$Prosocial_Intent_10 <- Pro_intent_Recode(HT2$Prosocial_Intent_10)
+
+#(Allow someone to go ahead of me in a line (e.g., supermarket, copying machine, etc.))
+HT2$Prosocial_Intent_11 <- Pro_intent_Recode(HT2$Prosocial_Intent_11)
+
+#(Give a stranger a lift in my car)
+HT2$Prosocial_Intent_12 <- Pro_intent_Recode(HT2$Prosocial_Intent_12)
+
+#(Let a neighbor whom I didn't know too well borrow an item of some value (e.g.,. I tools, a dish, etc.))
+HT2$Prosocial_Intent_13 <- Pro_intent_Recode(HT2$Prosocial_Intent_13)
+
+#(Buy 'charity' Christmas cards deliberately because I knew it was for a good cause)
+HT2$Prosocial_Intent_14 <- Pro_intent_Recode(HT2$Prosocial_Intent_14)
+
+#(Help a classmate who I did not know that well with a homework assignment when my knowledge was greater than his or hers)
+HT2$Prosocial_Intent_15 <- Pro_intent_Recode(HT2$Prosocial_Intent_15)
+
+#(Voluntarily look after a neighbor's pets or children without being paid for it)
+HT2$Prosocial_Intent_16 <- Pro_intent_Recode(HT2$Prosocial_Intent_16)
+
+#(Offer to help a handicapped or elderly stranger across a street)
+HT2$Prosocial_Intent_17 <- Pro_intent_Recode(HT2$Prosocial_Intent_17)
+
+#(Point out a clerk's error (in a bank, at the supermarket) in undercharging me for an item)
+HT2$Prosocial_Intent_18 <- Pro_intent_Recode(HT2$Prosocial_Intent_18)
+
+#####Prosocial Intention combined
+HT2$Pro_Intent_Score <- (HT2$Prosocial_Intent_1+HT2$Prosocial_Intent_2+HT2$Prosocial_Intent_3+HT2$Prosocial_Intent_4+HT2$Prosocial_Intent_5+HT2$Prosocial_Intent_6+HT2$Prosocial_Intent_7+HT2$Prosocial_Intent_8+HT2$Prosocial_Intent_9+HT2$Prosocial_Intent_10+HT2$Prosocial_Intent_11+HT2$Prosocial_Intent_12+HT2$Prosocial_Intent_13+HT2$Prosocial_Intent_14+HT2$Prosocial_Intent_15+HT2$Prosocial_Intent_16+HT2$Prosocial_Intent_17+HT2$Prosocial_Intent_18)
+```
+
+
+```{r}
+####Prosocial behavior measure
+
+HT2$Pro_beh_2 <- ifelse(is.na(HT2$Pro_beh_2)==TRUE, 0, (ifelse((HT2$Pro_beh_2=="Yes"), 1, 0)))
+
+HT2$Prosocial_Beh <- HT2$Pro_beh_2
+
+HT2$Prosocial_Beh <- ifelse((HT2$Pro_beh_2==0), 0, (ifelse((HT2$Pro_beh_Validation=="Yes"), 1,NA)))
+
+
+```
+
+Data cleaning ends
+Manipulation Check_Descriptive Analysis Starts
+
+```{r}
+#Descriptive Analysis
+
+##Participants' by condition
+freq(HT2$Condition)
+
+##Volunteer benefit_self or others_Forced choice
+freq(HT2$Vol_Benefits_forced)
+
+##Volunteer benefits and intentions
+###Volunteer benefits_others
+descr(as.numeric(HT2$Vol_Benefits_Uni_O))
+###Volunteer benefits_self
+descr(as.numeric(HT2$Vol_Benefits_Uni_S))
+###Volunteer Intention_benefiting self
+descr(as.numeric(HT2$Vol_Intent_S))
+###Volunteer Intention_benefiting others
+descr(as.numeric(HT2$Vol_Intent_O))
+###Volunteer benefit_self or others
+descr(HT2$Vol_Benefits_Bi)
+
+##Page submit time 
+### in Raw data
+descr(as.numeric(HT2_Raw$`Timing_O&S_Page Submit`))
+descr(as.numeric(HT2_Raw$`Timing_self_Page Submit`))
+descr(as.numeric(HT2_Raw$`Timing_Other_Page Submit`))
+
+### in filtered data 
+descr(as.numeric(HT2$`Timing_O&S_Page Submit`))
+descr(as.numeric(HT2$`Timing_self_Page Submit`))
+descr(as.numeric(HT2$`Timing_Other_Page Submit`))
+
+#Should we add an ANOVA for testing whether participants spent more time in one message then the others?
+
+```
+
+Manipulation Check_Descriptive Analysis ends
+Manipulation Check_Inferential Analysis Starts
+
+```{r}
+#Inferential Analysis_Manipulation check
+Anova(lm(Vol_Intent_O~Condition, data=HT2))
+tapply(HT2$Vol_Intent_O, INDEX =HT2$Condition, FUN = mean)
+tapply(HT2$Vol_Intent_O, INDEX =HT2$Condition, FUN = sd)
+TukeyHSD(aov(lm(Vol_Intent_O~Condition, data=HT2)))
+
+Anova(lm(Vol_Intent_S~Condition, data=HT2))
+tapply(HT2$Vol_Intent_S, INDEX =HT2$Condition, FUN = mean)
+tapply(HT2$Vol_Intent_S, INDEX =HT2$Condition, FUN = sd)
+TukeyHSD(aov(lm(Vol_Intent_S~Condition, data=HT2)))
+
+Anova(lm(Vol_Benefits_Bi~Condition, data=HT2))
+tapply(HT2$Vol_Benefits_Bi, INDEX =HT2$Condition, FUN = mean)
+tapply(HT2$Vol_Benefits_Bi, INDEX =HT2$Condition, FUN = sd)
+TukeyHSD(aov(lm(Vol_Benefits_Bi~Condition, data=HT2)))
+
+Anova(lm(Vol_Benefits_Uni_O~Condition, data=HT2))
+tapply(HT2$Vol_Benefits_Uni_O, INDEX =HT2$Condition, FUN = mean)
+tapply(HT2$Vol_Benefits_Uni_O, INDEX =HT2$Condition, FUN = sd)
+TukeyHSD(aov(lm(Vol_Benefits_Uni_O~Condition, data=HT2)))
+
+Anova(lm(Vol_Benefits_Uni_S~Condition, data=HT2))
+tapply(HT2$Vol_Benefits_Uni_S, INDEX =HT2$Condition, FUN = mean)
+tapply(HT2$Vol_Benefits_Uni_S, INDEX =HT2$Condition, FUN = sd)
+TukeyHSD(aov(lm(Vol_Benefits_Uni_S~Condition, data=HT2)))
+
+chisq.test(HT2$Condition,HT2$Vol_Benefits_forced)
+tapply(HT2$Vol_Benefits_forced, INDEX =HT2$Condition, FUN = freq)
+
+
+#cro(HT2$Vol_Benefits_forced, HT2$Condition)
+#cro_cpct(HT2$Vol_Benefits_forced, HT2$Condition)
+```
+```{r}
+
+ggplot(HT2, aes(y = Vol_Benefits_Uni_O,x = Condition),)+
+  geom_boxplot()+
+  labs(y='Vol_Benefts_Uni_O', x='condition')
+
+ggplot(HT2, aes(y = Vol_Benefits_Uni_S,x = Condition),)+
+  geom_boxplot()+
+  labs(y='Vol_Benefts_Uni_S', x='condition')
+
+ggplot(HT2, aes(y = Vol_Benefits_Bi,x = Condition),)+
+  geom_boxplot()+
+  labs(y='Vol_Benefts_Bi', x='condition')
+
+ggplot(HT2, aes(y = Vol_Intent_O,x = Condition),)+
+  geom_boxplot()+
+  labs(y='Vol_Intent_O', x='condition')
+
+ggplot(HT2, aes(y = Vol_Intent_S,x = Condition),)+
+  geom_boxplot()+
+  labs(y='Vol_Intent_S', x='condition')
+
+
+ggplot(HT2, aes(x = Vol_Intent_S),)+
+  geom_density()
+ggplot(HT2, aes(x = Vol_Intent_O),)+
+  geom_density()
+
+
+ggplot(HT2, aes(x = Vol_Benefits_Uni_O,y = Condition),)+
+  geom_boxplot()+
+  labs(y='Vol_Benefts_Uni_O', x='condition')
+
+plot_O <- cbind.data.frame(HT2$Vol_Benefits_Uni_O,HT2$Condition)
+plot_O$variable <- ifelse(is.na(HT2$Vol_Benefits_Uni_O)==TRUE, NA, "Other benefit")
+names(plot_O) <- c("Vol_Benefits","Condition","variable")
+
+plot_S <- cbind.data.frame(HT2$Vol_Benefits_Uni_S,HT2$Condition)
+plot_S$variable <- ifelse(is.na(HT2$Vol_Benefits_Uni_S)==TRUE, NA, "Self benefit")
+names(plot_S) <- c("Vol_Benefits","Condition","variable")
+
+
+Plot <- rbind(plot_O,plot_S)
+
+    
+```
+Manipulation check ends
+Coding for the main effects starts
+```{r}
+##Social_Desirability
+descr(as.numeric(HT2$Social_Desirability_Score))
+ggplot(HT2, aes(x = Social_Desirability_Score),)+
+  geom_density()
+
+##COVID stress
+descr(as.numeric(HT2$COVID_Stress_1))
+ggplot(HT2, aes(x = COVID_Stress_1),)+
+  geom_density()
+
+##Volunteer intention
+descr(as.numeric(HT2$Vol_intent_combined))
+ggplot(HT2, aes(x = Vol_intent_combined),)+
+  geom_density()
+
+
+##PBIS
+descr(as.numeric(HT2$PBIS_score))
+ggplot(HT2, aes(x = PBIS_score),)+
+  geom_density()
+hist(HT2$PBIS_score)
+
+##Prosocial intention
+descr(as.numeric(HT2$Pro_Intent_Score))
+ggplot(HT2, aes(x = Pro_Intent_Score),)+
+  geom_density()
+```
+HT2$Vol_intent_combined_High_Low <- quantileCut (HT2$Vol_intent_combined, 2)
+table(HT2$Vol_intent_combined )
+HT2$Vol_intent_combined_High_Low <- factor(HT2$Vol_intent_combined_High_Low,
+levels= c("(5.99,12]", "(12,14]"),
+labels = c("Low","High" ))
+table(HT2$Vol_intent_combined_High_Low )
+
+
+cro(HT2$Vol_intent_combined,HT2$Condition)
+cro_cpct(HT2$Vol_intent_combined,HT2$Condition)
+
+
+cro_cpct(HT2$Condition,HT2$Vol_intent_combined)
+
+```{r}
+##Demographics
+###Age
+descr(as.numeric(HT2$Dem_Age))
+
+###Sex
+freq(HT2$Dem_Bio_Sex)
+
+###Gender
+freq(HT2$Dem_Gen_ID)
+
+###Race
+freq(HT2$Dem_Race)
+freq(HT2$Dem_Race_6_TEXT)
+
+###Gender
+freq(HT2$Dem_Gen_ID)
+
+```
+
+```{r}
+#Inferential Analysis
+## Social desirability
+SD_cronbach <- data.frame(HT2$Social_Desirability_1,HT2$Social_Desirability_2,HT2$Social_Desirability_3,HT2$Social_Desirability_4,HT2$Social_Desirability_5,HT2$Social_Desirability_6,HT2$Social_Desirability_7,HT2$Social_Desirability_8,HT2$Social_Desirability_9,HT2$Social_Desirability_10,HT2$Social_Desirability_11,HT2$Social_Desirability_12,HT2$Social_Desirability_13,HT2$Social_Desirability_14,HT2$Social_Desirability_15,HT2$Social_Desirability_16)
+cronbach(SD_cronbach)
+
+Anova(lm(Social_Desirability_Score~Condition, data=HT2))
+tapply(HT2$Social_Desirability_Score, INDEX =HT2$Condition, FUN = mean)
+tapply(HT2$Social_Desirability_Score, INDEX =HT2$Condition, FUN = sd)
+TukeyHSD(aov(lm(Social_Desirability_Score~Condition, data=HT2)))
+
+#COVID stress
+Anova(lm(COVID_Stress_1~Condition, data=HT2))
+tapply(HT2$COVID_Stress_1, INDEX =HT2$Condition, FUN = mean)
+tapply(HT2$COVID_Stress_1, INDEX =HT2$Condition, FUN = sd)
+TukeyHSD(aov(lm(COVID_Stress_1~Condition, data=HT2)))
+
+##Volunteer intention
+Vol_Intent_cronbach <- data.frame(HT2$Vol_Intent_1, HT2$Vol_Intent_2)
+cronbach(Vol_Intent_cronbach)
+
+Anova(lm(Vol_intent_combined~Condition, data=HT2))
+tapply(HT2$Vol_intent_combined, INDEX =HT2$Condition, FUN = mean)
+tapply(HT2$Vol_intent_combined, INDEX =HT2$Condition, FUN = sd)
+TukeyHSD(aov(lm(Vol_intent_combined~Condition, data=HT2)))
+
+Anova(lm(Vol_Intent_1~Condition, data=HT2))
+tapply(HT2$Vol_Intent_1, INDEX =HT2$Condition, FUN = mean)
+tapply(HT2$Vol_Intent_1, INDEX =HT2$Condition, FUN = sd)
+TukeyHSD(aov(lm(Vol_Intent_1~Condition, data=HT2)))
+
+Anova(lm(Vol_Intent_2~Condition, data=HT2))
+tapply(HT2$Vol_Intent_2, INDEX =HT2$Condition, FUN = mean)
+tapply(HT2$Vol_Intent_2, INDEX =HT2$Condition, FUN = sd)
+TukeyHSD(aov(lm(Vol_Intent_2~Condition, data=HT2)))
+
+t.test(HT2$Vol_Intent_1,HT2$Vol_Intent_2,alternative = c("two.sided"),paired = TRUE,conf.level = 0.95)
+
+##PBIS
+Anova(lm(PBIS_score~Condition, data=HT2))
+tapply(HT2$PBIS_score, INDEX =HT2$Condition, FUN = mean)
+tapply(HT2$PBIS_score, INDEX =HT2$Condition, FUN = sd)
+TukeyHSD(aov(lm(PBIS_score~Condition, data=HT2)))
+
+PBIS_cronbach <- data.frame(HT2$PBIS_1,HT2$PBIS_2,HT2$PBIS_3,HT2$PBIS_4)
+cronbach(PBIS_cronbach)
+
+##Prosocial intention
+Anova(lm(Pro_Intent_Score~Condition, data=HT2))
+tapply(HT2$Pro_Intent_Score, INDEX =HT2$Condition, FUN = mean)
+tapply(HT2$Pro_Intent_Score, INDEX =HT2$Condition, FUN = sd)
+TukeyHSD(aov(lm(Pro_Intent_Score~Condition, data=HT2)))
+
+Prosocial_beh_cronbach <- data.frame(HT2$Prosocial_Intent_1,HT2$Prosocial_Intent_2,HT2$Prosocial_Intent_3,HT2$Prosocial_Intent_4,HT2$Prosocial_Intent_5,HT2$Prosocial_Intent_6,HT2$Prosocial_Intent_7,HT2$Prosocial_Intent_8,HT2$Prosocial_Intent_9,HT2$Prosocial_Intent_10,HT2$Prosocial_Intent_11,HT2$Prosocial_Intent_12,HT2$Prosocial_Intent_13,HT2$Prosocial_Intent_14,HT2$Prosocial_Intent_15,HT2$Prosocial_Intent_16,HT2$Prosocial_Intent_17,HT2$Prosocial_Intent_18)
+cronbach(Prosocial_beh_cronbach)
+
+
+
+##Prosocial behavior
+chisq.test(HT2$Condition,HT2$Prosocial_Beh)
+tapply(HT2$Prosocial_Beh, INDEX =HT2$Condition, FUN = freq)
+```
+
+
+```{r}
+##Social desirability and prosociality
+
+Regression_shortcut <- function (x,y){
+  z <- lm(x~y)
+  a <- summary(z)
+  b <- confint(z)
+  return (list(a,b))
+}
+
+###Volunteer intention
+Vol_intent_SD_regression <- lm(Social_Desirability_Score~Vol_intent_combined, data =HT2)
+summary(Vol_intent_SD_regression)
+confint(Vol_intent_SD_regression, level = 0.95)
+
+Vol_intent_SD_regression_1 <- lm(Social_Desirability_Score~Vol_Intent_1, data =HT2)
+summary(Vol_intent_SD_regression_1)
+confint(Vol_intent_SD_regression_1, level = 0.95)
+
+Vol_intent_SD_regression_2 <- lm(Social_Desirability_Score~Vol_Intent_2, data =HT2)
+summary(Vol_intent_SD_regression_2)
+confint(Vol_intent_SD_regression_2, level = 0.95)
+ 
+###PBIS
+PBIS_SD_regression <- lm(Social_Desirability_Score~PBIS_score, data =HT2)
+summary(PBIS_SD_regression)
+confint(PBIS_SD_regression, level = 0.95)
+
+###Prosocial behavior
+Pro_intent_SD_regression <- lm(Social_Desirability_Score~Pro_Intent_Score, data =HT2)
+summary(Pro_intent_SD_regression)
+confint(Pro_intent_SD_regression, level = 0.95)
+```
+
+
+```{r}
+##COVID stress and prosociality
+###Volunteer intention
+Vol_intent_COVID_regression <- lm(COVID_Stress_1~Vol_intent_combined, data =HT2)
+summary(Vol_intent_COVID_regression)
+confint(Vol_intent_COVID_regression, level = 0.95)
+
+Vol_intent_COVID_regression_1 <- lm(COVID_Stress_1~Vol_Intent_1, data =HT2)
+summary(Vol_intent_COVID_regression_1)
+confint(Vol_intent_COVID_regression_1, level = 0.95)
+
+Vol_intent_COVID_regression_2 <- lm(COVID_Stress_1~Vol_Intent_2, data =HT2)
+summary(Vol_intent_COVID_regression_2)
+confint(Vol_intent_COVID_regression_2, level = 0.95)
+
+###PBIS
+PBIS_COVID_regression <- lm(COVID_Stress_1~PBIS_score, data =HT2)
+summary(PBIS_COVID_regression)
+confint(PBIS_COVID_regression, level = 0.95)
+
+###Prosocial behavior
+Pro_intent_COVID_regression <- lm(COVID_Stress_1~Pro_Intent_Score, data =HT2)
+summary(Pro_intent_COVID_regression)
+confint(Pro_intent_COVID_regression, level = 0.95)
+```
+
+
+```{r}
+##PBIS&Prosocial behavior
+PBIS_Pro_Intent_regression <- lm(Pro_Intent_Score~PBIS_score, data =HT2)
+summary(PBIS_Pro_Intent_regression)
+confint(PBIS_Pro_Intent_regression, level = 0.95)
+plot(PBIS_Pro_Intent_regression)
+
+t.test(Pro_Intent_Score~Prosocial_Beh,alternative = c("less"), data= HT2)
+t.test(PBIS_score~Prosocial_Beh, alternative = c("less"),data= HT2)
+
+```
+
+
+```{r}
+##Social desirability and prosociality (graph)
+###Volunteer intention
+ggplot(HT2, aes(x = Social_Desirability_Score, y = Vol_intent_combined),)+
+  geom_point()+
+  geom_abline()
+
+```
+
+
+
+
+```{r}
+
+### Joshua work April 4th
+
+
+Inter_CorrData<-data.frame(HT2$Social_Desirability_Score, HT2$COVID_Stress_1,HT2$Vol_intent_combined,HT2$Vol_Intent_1,HT2$Vol_Intent_2,HT2$PBIS_score,HT2$Pro_Intent_Score )
+Thesis_InterCor <- rcorr(as.matrix(Inter_CorrData,type=c("pearson")))
+write.xlsx(as.data.frame(Thesis_InterCor$r), file  = "Inter_CorrData.csv" )
+
+Anova(lm(HT2$Vol_intent_combined~HT2$Condition+HT2$Social_Desirability_Score))
+Anova(lm(HT2$Vol_Intent_1~HT2$Condition+HT2$Social_Desirability_Score))
+Anova(lm(HT2$Vol_Intent_2~HT2$Condition+HT2$Social_Desirability_Score)) 
+Anova(lm(HT2$Pro_Intent_Score~HT2$Condition+HT2$Social_Desirability_Score))
+Anova(lm(HT2$PBIS_score~HT2$Condition+HT2$Social_Desirability_Score))
+
+Anova(lm(HT2$Vol_intent_combined~HT2$Condition+HT2$COVID_Stress_1))
+Anova(lm(HT2$Vol_Intent_1~HT2$Condition+HT2$COVID_Stress_1))
+Anova(lm(HT2$Vol_Intent_2~HT2$Condition+HT2$COVID_Stress_1))
+Anova(lm(HT2$Pro_Intent_Score~HT2$Condition+HT2$COVID_Stress_1))
+Anova(lm(HT2$PBIS_score~HT2$Condition+HT2$COVID_Stress_1))
+
+summary(lm(HT2$Pro_Intent_Score~HT2$Condition+HT2$Social_Desirability_Score))
+summary(lm(HT2$Vol_Intent_1~HT2$Condition+HT2$Social_Desirability_Score))
+    
+```
